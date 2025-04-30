@@ -1,0 +1,127 @@
+#####################
+#  GLOBAL NETWORK   #
+#####################
+networks:
+    traefik-public:
+        external: true # create once:  docker network create traefik-public
+        name: traefik-public
+
+#####################
+#   CORE SERVICES   #
+#####################
+services:
+    ### Reverse-proxy / TLS ###
+    traefik:
+        image: traefik:v2.11
+        command:
+            - --providers.docker=true
+            - --providers.docker.exposedbydefault=false
+            - --entryPoints.web.address=:80
+            - --entryPoints.websecure.address=:443
+            - --certificatesResolvers.letsEncrypt.acme.dnsChallenge.provider=porkbun
+            - --certificatesResolvers.letsEncrypt.acme.email=${LETSENCRYPT_EMAIL}
+            - --certificatesResolvers.letsEncrypt.acme.storage=/letsencrypt/acme.json
+        ports:
+            - "80:80"
+            - "443:443"
+            - "8080:8080" # dashboard (auth-guard later!)
+        volumes:
+            - ./letsencrypt:/letsencrypt
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+        environment:
+            - PORKBUN_API_KEY=${PORKBUN_API_KEY}
+            - PORKBUN_SECRET_API_KEY=${PORKBUN_SECRET_API_KEY}
+        networks:
+            - traefik-public
+
+    ### n8n (workflows) ###
+    n8n:
+        image: n8nio/n8n:1.41.1
+        env_file: ./env/n8n.env # keeps this section tidy
+        volumes:
+            - n8n_data:/home/node/.n8n
+        networks:
+            - traefik-public
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-public
+            - traefik.http.routers.n8n.rule=Host(`n8n.${DOMAIN}`)
+            - traefik.http.routers.n8n.entryPoints=websecure
+            - traefik.http.routers.n8n.tls.certresolver=letsEncrypt
+
+    ### Crawl4AI (+Chromium) ###
+    crawl4ai:
+        image: unclecode/crawl4ai:latest # :contentReference[oaicite:0]{index=0}
+        environment:
+            - ENABLE_CHROMIUM=true
+            - OPENAI_API_KEY=${OPENAI_API_KEY}
+        networks:
+            - traefik-public
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-public
+            - traefik.http.routers.crawl4ai.rule=Host(`crawl4ai.${DOMAIN}`)
+            - traefik.http.routers.crawl4ai.entryPoints=websecure
+            - traefik.http.routers.crawl4ai.tls.certresolver=letsEncrypt
+            - traefik.http.services.crawl4ai.loadbalancer.server.port=11235 # API port
+
+    ########################
+    #      MCP SERVERS     #
+    ########################
+
+    sequentialthinking-mcp:
+        image: mcp/sequentialthinking:latest # :contentReference[oaicite:1]{index=1}
+        networks: [traefik-public]
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-public
+            - traefik.http.routers.sequential.rule=Host(`sequential.${DOMAIN}`)
+            - traefik.http.routers.sequential.entryPoints=websecure
+            - traefik.http.routers.sequential.tls.certresolver=letsEncrypt
+            - traefik.http.services.sequential.loadbalancer.server.port=8080
+
+    supabase-mcp:
+        image: mcp/supabase:latest # :contentReference[oaicite:2]{index=2}
+        environment:
+            - SUPABASE_URL=${SUPABASE_URL}
+            - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+        networks: [traefik-public]
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-public
+            - traefik.http.routers.supabase.rule=Host(`supabase.${DOMAIN}`)
+            - traefik.http.routers.supabase.entryPoints=websecure
+            - traefik.http.routers.supabase.tls.certresolver=letsEncrypt
+            - traefik.http.services.supabase.loadbalancer.server.port=8080
+
+    github-mcp:
+        image: mcp/github:latest # :contentReference[oaicite:3]{index=3}
+        environment:
+            - GITHUB_TOKEN=${GITHUB_TOKEN}
+        networks: [traefik-public]
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-public
+            - traefik.http.routers.github.rule=Host(`github.${DOMAIN}`)
+            - traefik.http.routers.github.entryPoints=websecure
+            - traefik.http.routers.github.tls.certresolver=letsEncrypt
+            - traefik.http.services.github.loadbalancer.server.port=8080
+
+    apify-mcp:
+        image: ghcr.io/apify/actors-mcp-server:latest # :contentReference[oaicite:4]{index=4}
+        environment:
+            - APIFY_TOKEN=${APIFY_TOKEN}
+        networks: [traefik-public]
+        labels:
+            - traefik.enable=true
+            - traefik.docker.network=traefik-public
+            - traefik.http.routers.apify.rule=Host(`apify.${DOMAIN}`)
+            - traefik.http.routers.apify.entryPoints=websecure
+            - traefik.http.routers.apify.tls.certresolver=letsEncrypt
+            - traefik.http.services.apify.loadbalancer.server.port=3000
+
+#####################
+#   PERSISTENCE     #
+#####################
+volumes:
+    n8n_data:
