@@ -1,5 +1,7 @@
 # AI Automation Infrasture
 
+![Banner image](./assets/banner.png)
+
 > **Self‑hosted AI & workflow automation platform — n8n orchestration, multi‑agent MCPs, Crawl4AI browser cluster, and Traefik reverse proxy in a single Docker Compose stack.**
 
 ![License](https://img.shields.io/github/license/your‑org/ai‑automation‑infrastructure‑suite?style=for-the-badge)
