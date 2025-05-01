@@ -1,4 +1,4 @@
-# AI Automation Infrasture
+# Unified AI Automation Infrastructure Suite
 
 ![Banner image](./assets/banner.png)
 
