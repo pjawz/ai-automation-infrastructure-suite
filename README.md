@@ -1,6 +1,6 @@
-# Unified AI Automation Infrastructure Suite
-
 ![Banner image](./assets/banner.png)
+
+# Unified AI Automation Infrastructure Suite
 
 > **Self‑hosted AI & workflow automation platform — n8n orchestration, multi‑agent MCPs, Crawl4AI browser cluster, and Traefik reverse proxy in a single Docker Compose stack.**
 
