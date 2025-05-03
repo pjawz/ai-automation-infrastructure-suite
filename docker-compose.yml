@@ -12,7 +12,7 @@ networks:
 services:
     ### Reverse-proxy / TLS ###
     traefik:
-        image: traefik:v2.11
+        image: traefik:latest
         command:
             - --providers.docker=true
             - --providers.docker.exposedbydefault=false
@@ -36,8 +36,10 @@ services:
 
     ### n8n (workflows) ###
     n8n:
-        image: n8nio/n8n:1.41.1
-        env_file: ./env/n8n.env # keeps this section tidy
+        image: n8nio/n8n:latest
+        env_file: .env # keeps this section tidy
+        ports:
+            - "127.0.0.1:5678:5678" # Map to localhost only for direct access if needed
         volumes:
             - n8n_data:/home/node/.n8n
         networks:
@@ -45,9 +47,10 @@ services:
         labels:
             - traefik.enable=true
             - traefik.docker.network=traefik-public
-            - traefik.http.routers.n8n.rule=Host(`n8n.${DOMAIN}`)
+            - traefik.http.routers.n8n.rule=Host(`ai.${DOMAIN}`)
             - traefik.http.routers.n8n.entryPoints=websecure
             - traefik.http.routers.n8n.tls.certresolver=letsEncrypt
+            - traefik.http.services.n8n.loadbalancer.server.port=5678
 
     ### Crawl4AI (+Chromium) ###
     crawl4ai:
@@ -80,19 +83,19 @@ services:
             - traefik.http.routers.sequential.tls.certresolver=letsEncrypt
             - traefik.http.services.sequential.loadbalancer.server.port=8080
 
-    supabase-mcp:
-        image: mcp/supabase:latest # :contentReference[oaicite:2]{index=2}
-        environment:
-            - SUPABASE_URL=${SUPABASE_URL}
-            - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
-        networks: [traefik-public]
-        labels:
-            - traefik.enable=true
-            - traefik.docker.network=traefik-public
-            - traefik.http.routers.supabase.rule=Host(`supabase.${DOMAIN}`)
-            - traefik.http.routers.supabase.entryPoints=websecure
-            - traefik.http.routers.supabase.tls.certresolver=letsEncrypt
-            - traefik.http.services.supabase.loadbalancer.server.port=8080
+    # supabase-mcp:
+    #     image: mcp/supabase:latest # :contentReference[oaicite:2]{index=2}
+    #     environment:
+    #         - SUPABASE_URL=${SUPABASE_URL}
+    #         - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+    #     networks: [traefik-public]
+    #     labels:
+    #         - traefik.enable=true
+    #         - traefik.docker.network=traefik-public
+    #         - traefik.http.routers.supabase.rule=Host(`supabase.${DOMAIN}`)
+    #         - traefik.http.routers.supabase.entryPoints=websecure
+    #         - traefik.http.routers.supabase.tls.certresolver=letsEncrypt
+    #         - traefik.http.services.supabase.loadbalancer.server.port=8080
 
     github-mcp:
         image: mcp/github:latest # :contentReference[oaicite:3]{index=3}
@@ -107,18 +110,18 @@ services:
             - traefik.http.routers.github.tls.certresolver=letsEncrypt
             - traefik.http.services.github.loadbalancer.server.port=8080
 
-    apify-mcp:
-        image: ghcr.io/apify/actors-mcp-server:latest # :contentReference[oaicite:4]{index=4}
-        environment:
-            - APIFY_TOKEN=${APIFY_TOKEN}
-        networks: [traefik-public]
-        labels:
-            - traefik.enable=true
-            - traefik.docker.network=traefik-public
-            - traefik.http.routers.apify.rule=Host(`apify.${DOMAIN}`)
-            - traefik.http.routers.apify.entryPoints=websecure
-            - traefik.http.routers.apify.tls.certresolver=letsEncrypt
-            - traefik.http.services.apify.loadbalancer.server.port=3000
+    # apify-mcp:
+    #     image: ghcr.io/apify/actors-mcp-server:latest # :contentReference[oaicite:4]{index=4}
+    #     environment:
+    #         - APIFY_TOKEN=${APIFY_TOKEN}
+    #     networks: [traefik-public]
+    #     labels:
+    #         - traefik.enable=true
+    #         - traefik.docker.network=traefik-public
+    #         - traefik.http.routers.apify.rule=Host(`apify.${DOMAIN}`)
+    #         - traefik.http.routers.apify.entryPoints=websecure
+    #         - traefik.http.routers.apify.tls.certresolver=letsEncrypt
+    #         - traefik.http.services.apify.loadbalancer.server.port=3000
 
 #####################
 #   PERSISTENCE     #

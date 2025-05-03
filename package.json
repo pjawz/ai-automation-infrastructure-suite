@@ -1,0 +1,23 @@
+{
+    "name": "ai-infra-dns-manager",
+    "version": "1.0.0",
+    "description": "Manages Porkbun DNS records based on docker-compose.yml labels.",
+    "main": "manage-dns.js",
+    "scripts": {
+        "start": "node manage-dns.js",
+        "start:infra": "bash ./start.sh"
+    },
+    "keywords": [
+        "porkbun",
+        "dns",
+        "traefik",
+        "docker-compose"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^1.7.2",
+        "dotenv": "^16.4.5",
+        "js-yaml": "^4.1.0"
+    }
+}
